@@ -46,18 +46,14 @@ impl SubSystem for AnimationSubSystem {
     }
     fn update(&mut self, system: &mut System, delta_time: time::Duration) {
         let mut to_set = vec![];
-        {
-            //println!("Update animations {}", self.animations.len());
-            for (_, &mut (ref mut animation, ref mut target)) in self.animations.iter_mut() {
-                //println!("Update anim");
-                let value = { animation.update(delta_time) };
-                to_set.push((target.entity_id.clone(), target.property_key.clone(), PropNode::Float(value)));
-            }
+        //println!("Update animations {}", self.animations.len());
+        for (_, &mut (ref mut animation, ref mut target)) in self.animations.iter_mut() {
+            //println!("Update anim");
+            let value = { animation.update(delta_time) };
+            to_set.push((target.entity_id.clone(), target.property_key.clone(), PropNode::Float(value)));
         }
-        {
-            for t in to_set {
-                system.set_property(&t.0, t.1, t.2);
-            }
+        for t in to_set {
+            system.set_property(&t.0, t.1, t.2);
         }
     }
 }
