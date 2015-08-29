@@ -27,10 +27,6 @@ impl AnimationSubSystem {
 
 impl ISubSystem for AnimationSubSystem {
 
-    fn on_entity_added(&mut self, system: &mut ISystem, entity_id: &EntityId) {
-        let prop_refs: Vec<PropRef> = { system.get_properties(&entity_id).unwrap() };
-        self.on_property_value_change(system, &prop_refs);
-    }
     fn on_property_value_change(&mut self, system: &mut ISystem, prop_refs: &Vec<PropRef>) {
         for pr in prop_refs.iter().filter(|pr| pr.property_key == "animation") {
             let pn = system.get_property_value(&pr.entity_id, &pr.property_key.as_str()).unwrap();
