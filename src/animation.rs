@@ -22,15 +22,15 @@ pub struct Animation {
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum AnimationLoadError {
-    PropTranslateErr(PropTranslateErr),
+    PonTranslateErr(PonTranslateErr),
     UnkownAnimationType(String),
     MissingArgument(String),
     BadArgumentValue(String),
 }
 
-impl From<PropTranslateErr> for AnimationLoadError {
-    fn from(err: PropTranslateErr) -> AnimationLoadError {
-        AnimationLoadError::PropTranslateErr(err)
+impl From<PonTranslateErr> for AnimationLoadError {
+    fn from(err: PonTranslateErr) -> AnimationLoadError {
+        AnimationLoadError::PonTranslateErr(err)
     }
 }
 
