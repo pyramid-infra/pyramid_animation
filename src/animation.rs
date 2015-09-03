@@ -1,10 +1,10 @@
 
-use pyramid::propnode_parser as propnode_parser;
+use pyramid::pon_parser as pon_parser;
 
 use time::*;
 
 use curve::*;
-use pyramid::propnode::*;
+use pyramid::pon::*;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Loop {
@@ -35,7 +35,7 @@ impl From<PropTranslateErr> for AnimationLoadError {
 }
 
 impl Animation {
-    pub fn from_prop_node(node: &PropNode) -> Result<Animation, AnimationLoadError> {
+    pub fn from_prop_node(node: &Pon) -> Result<Animation, AnimationLoadError> {
         let &PropTransform { ref name, ref arg } = try!(node.as_transform());
         let arg = try!(arg.as_object());
         match name.as_str() {
@@ -119,8 +119,8 @@ fn test_animation() {
 }
 
 #[test]
-fn test_animation_from_propnode() {
-    let mut kf = Animation::from_prop_node(&propnode_parser::parse(
+fn test_animation_from_pon() {
+    let mut kf = Animation::from_prop_node(&pon_parser::parse(
         "key_framed { property: this.pos_y, keys: [{ time: 0.0, value: 0.0 }, { time: 1.0, value: 1.0 }], loop: 'forever' }").unwrap()).unwrap();
     assert_eq!(kf.update(Duration::milliseconds(100)), 0.1);
     assert_eq!(kf.update(Duration::milliseconds(500)), 0.6);

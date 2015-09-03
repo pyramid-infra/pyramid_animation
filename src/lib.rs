@@ -8,7 +8,7 @@ mod animation;
 mod curve;
 
 use pyramid::interface::*;
-use pyramid::propnode::*;
+use pyramid::pon::*;
 use pyramid::document::*;
 use animation::*;
 
@@ -38,7 +38,7 @@ impl ISubSystem for AnimationSubSystem {
     fn update(&mut self, system: &mut ISystem, delta_time: time::Duration) {
         for (_, &mut (ref mut animation, ref mut target)) in self.animations.iter_mut() {
             let value = { animation.update(delta_time) };
-            system.set_property(&target.entity_id.clone(), target.property_key.clone(), PropNode::Float(value));
+            system.set_property(&target.entity_id.clone(), target.property_key.clone(), Pon::Float(value));
         }
     }
 }
