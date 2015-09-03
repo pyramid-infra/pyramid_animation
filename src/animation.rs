@@ -36,19 +36,19 @@ impl From<PropTranslateErr> for AnimationLoadError {
 
 impl Animation {
     pub fn from_prop_node(node: &Pon) -> Result<Animation, AnimationLoadError> {
-        let &PropTransform { ref name, ref arg } = try!(node.as_transform());
-        let arg = try!(arg.as_object());
-        match name.as_str() {
+        let &TypedPon { ref type_name, ref data } = try!(node.as_transform());
+        let data = try!(data.as_object());
+        match type_name.as_str() {
             "key_framed" => {
-                let property = match arg.get("property") {
+                let property = match data.get("property") {
                     Some(&ref v) => try!(v.as_reference()),
                     _ => return Err(AnimationLoadError::MissingArgument("property".to_string()))
                 };
-                let duration = match arg.get("duration") {
+                let duration = match data.get("duration") {
                     Some(&ref v) => *try!(v.as_float()),
                     _ => 1.0
                 };
-                let loop_type = match arg.get("loop") {
+                let loop_type = match data.get("loop") {
                     Some(&ref v) => match try!(v.as_string()).as_str() {
                         "forever" => Loop::Forever,
                         "once" => Loop::Once,
@@ -56,11 +56,11 @@ impl Animation {
                     },
                     None => Loop::Once
                 };
-                let property = match arg.get("property") {
+                let property = match data.get("property") {
                     Some(&ref v) => try!(v.as_reference()),
                     _ => return Err(AnimationLoadError::MissingArgument("property".to_string()))
                 };
-                let keys_nodes = match arg.get("keys") {
+                let keys_nodes = match data.get("keys") {
                     Some(&ref n) => try!(n.as_array()),
                     _ => return Err(AnimationLoadError::MissingArgument("keys".to_string()))
                 };
