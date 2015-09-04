@@ -17,15 +17,7 @@ impl PonCurve for LinearKeyFrameCurve<f32> {
 }
 impl PonCurve for LinearKeyFrameCurve<Vector3<f32>> {
     fn value_as_pon(&self, time: f32) -> Pon {
-        let v = self.value(time);
-        Pon::TypedPon(Box::new(TypedPon {
-            type_name: "vec3".to_string(),
-            data: Pon::Object(hashmap!(
-                "x".to_string() => Pon::Float(v.x),
-                "y".to_string() => Pon::Float(v.y),
-                "z".to_string() => Pon::Float(v.z)
-                ))
-        }))
+        Pon::Vector3(self.value(time))
     }
 }
 
@@ -162,8 +154,8 @@ fn test_animation_from_pon() {
 fn test_animation_from_pon_vec3() {
     let mut kf: Animation = Pon::from_string(
         "key_framed { property: this.pos_y, keys: [{ time: 0.0, value: vec3 { x: 0.0, y: 0.0, z: 1.0 } }, { time: 1.0, value: vec3 { x: 1.0, y: 1.0, z: 1.0 } }], loop: 'forever' }").unwrap().translate().unwrap();
-    assert_eq!(kf.update(Duration::milliseconds(100)), Pon::from_string("vec3 { x: 0.1, y: 0.1, z: 1.0 }").unwrap());
-    assert_eq!(kf.update(Duration::milliseconds(500)), Pon::from_string("vec3 { x: 0.6, y: 0.6, z: 1.0 }").unwrap());
+    assert_eq!(kf.update(Duration::milliseconds(100)), Pon::Vector3(Vector3::new(0.1, 0.1, 1.0)));
+    assert_eq!(kf.update(Duration::milliseconds(500)), Pon::Vector3(Vector3::new(0.6, 0.6, 1.0)));
 }
 
 #[test]
