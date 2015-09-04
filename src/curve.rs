@@ -1,8 +1,11 @@
 use cgmath::*;
 
 #[derive(PartialEq, Debug)]
+pub struct Key<T>(pub f32, pub T);
+
+#[derive(PartialEq, Debug)]
 pub struct LinearKeyFrameCurve<T> {
-    pub keys: Vec<(f32, T)>
+    pub keys: Vec<Key<T>>
 }
 
 pub trait Curve<T> {
@@ -63,7 +66,7 @@ impl<T: Interpolateable> Curve<T> for LinearKeyFrameCurve<T> {
 #[test]
 fn test_key_frame_single() {
     let kf = LinearKeyFrameCurve {
-        keys: vec![(0.0, 0.0), (1.0, 1.0)]
+        keys: vec![Key(0.0, 0.0), Key(1.0, 1.0)]
     };
     assert_eq!(kf.value(-0.1), 0.0);
     assert_eq!(kf.value(0.0), 0.0);
@@ -75,7 +78,7 @@ fn test_key_frame_single() {
 #[test]
 fn test_key_frame_vector() {
     let kf = LinearKeyFrameCurve {
-        keys: vec![(0.0, Vector2::new(0.0, 0.0)), (1.0, Vector2::new(1.0, 1.0))]
+        keys: vec![Key(0.0, Vector2::new(0.0, 0.0)), Key(1.0, Vector2::new(1.0, 1.0))]
     };
     assert_eq!(kf.value(-0.1), Vector2::new(0.0, 0.0));
     assert_eq!(kf.value(0.0), Vector2::new(0.0, 0.0));

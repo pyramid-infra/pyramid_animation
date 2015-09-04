@@ -32,7 +32,7 @@ impl ISubSystem for AnimationSubSystem {
     fn on_property_value_change(&mut self, system: &mut ISystem, prop_refs: &Vec<PropRef>) {
         for pr in prop_refs.iter().filter(|pr| pr.property_key == "animation") {
             let pn = system.get_property_value(&pr.entity_id, &pr.property_key.as_str()).unwrap();
-            let anim = Animation::from_prop_node(&pn).unwrap();
+            let anim: Animation = pn.translate(&()).unwrap();
             let target = system.resolve_named_prop_ref(&pr.entity_id, &anim.property).unwrap();
             self.animations.insert(pr.entity_id, (anim, target));
         }
