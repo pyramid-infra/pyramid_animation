@@ -49,28 +49,27 @@ impl fmt::Debug for Animation {
     }
 }
 
-impl<'a, 'b, C> Translatable<'a, 'b, Loop, C> for Pon {
-    fn translate(&'a self, context: &'b C) -> Result<Loop, PonTranslateErr> {
-        let s: &str = from_pon!(self, self, context);
-        match s {
+impl<'a> Translatable<'a, Loop> for Pon {
+    fn inner_translate(&'a self) -> Result<Loop, PonTranslateErr> {
+        match try!(self.translate()) {
             "forever" => Ok(Loop::Forever),
             "once" => Ok(Loop::Once),
-            _ => Err(PonTranslateErr::InvalidValue { value: s.to_string() })
+            _ => Err(PonTranslateErr::InvalidValue { value: format!("{:?}", self) })
         }
     }
 }
 
-impl<'a, 'b, T, C> Translatable<'a, 'b, Key<T>, C> for Pon where Pon: Translatable<'a, 'b, T, C> + Translatable<'a, 'b, f32, C> {
-    fn translate(&'a self, context: &'b C) -> Result<Key<T>, PonTranslateErr> {
+impl<'a, T> Translatable<'a, Key<T>> for Pon where Pon: Translatable<'a, T> {
+    fn inner_translate(&'a self) -> Result<Key<T>, PonTranslateErr> {
         match self {
             &Pon::Object(..) => {
-                let time: f32 = try!(self.field_as(context, "time"));
-                let value = try!(self.field_as(context, "value"));
+                let time: f32 = try!(self.field_as::<f32>("time"));
+                let value = try!(self.field_as("value"));
                 Ok(Key(time, value))
             },
             &Pon::Array(ref arr) => {
-                let time: f32 = from_pon!(self, arr[0], context);
-                let value = from_pon!(self, arr[1], context);
+                let time: f32 = try!(arr[0].translate::<f32>());
+                let value = try!(arr[1].translate());
                 Ok(Key(time, value))
             },
             _ => {
@@ -80,27 +79,27 @@ impl<'a, 'b, T, C> Translatable<'a, 'b, Key<T>, C> for Pon where Pon: Translatab
     }
 }
 
-impl<'a, 'b, C> Translatable<'a, 'b, Animation, C> for Pon {
-    fn translate(&'a self, context: &'b C) -> Result<Animation, PonTranslateErr> {
-        let &TypedPon { ref type_name, ref data } = try!(self.translate(context));
+impl<'a> Translatable<'a, Animation> for Pon {
+    fn inner_translate(&'a self) -> Result<Animation, PonTranslateErr> {
+        let &TypedPon { ref type_name, ref data } = try!(self.translate());
         match type_name.as_str() {
             "key_framed" => {
-                let property: &NamedPropRef = from_pon!(self, try!(data.field("property")), &ReferenceContext);
-                let duration: f32 = try!(data.field_as_or(context, "duration", 1.0));
-                let loop_type = try!(data.field_as_or(context, "loop", Loop::Once));
-                let keys_array: &Vec<Pon> = try!(data.field_as(context, "keys"));
+                let property: &NamedPropRef = try!(try!(data.field("property")).as_reference());
+                let duration: f32 = try!(data.field_as_or("duration", 1.0));
+                let loop_type = try!(data.field_as_or("loop", Loop::Once));
+                let keys_array: &Vec<Pon> = try!(data.field_as("keys"));
                 let first_key = &keys_array[0];
                 let curve: Box<PonCurve> = {
-                    let as_vec3: Result<Key<Vector3<f32>>, PonTranslateErr> = first_key.translate(context);
+                    let as_vec3: Result<Key<Vector3<f32>>, PonTranslateErr> = first_key.translate();
                     if let Ok(..) = as_vec3 {
-                        let keys: Vec<Key<Vector3<f32>>> = try!(data.field_as(context, "keys"));
+                        let keys: Vec<Key<Vector3<f32>>> = try!(data.field_as("keys"));
                         Box::new(LinearKeyFrameCurve {
                             keys: keys
                         })
                     } else {
-                        let as_float: Result<Key<f32>, PonTranslateErr> = first_key.translate(context);
+                        let as_float: Result<Key<f32>, PonTranslateErr> = first_key.translate();
                         if let Ok(..) = as_float {
-                            let keys: Vec<Key<f32>> = try!(data.field_as(context, "keys"));
+                            let keys: Vec<Key<f32>> = try!(data.field_as("keys"));
                             Box::new(LinearKeyFrameCurve {
                                 keys: keys
                             })
@@ -154,7 +153,7 @@ fn test_animation() {
 #[test]
 fn test_animation_from_pon() {
     let mut kf: Animation = Pon::from_string(
-        "key_framed { property: this.pos_y, keys: [{ time: 0.0, value: 0.0 }, { time: 1.0, value: 1.0 }], loop: 'forever' }").unwrap().translate(&()).unwrap();
+        "key_framed { property: this.pos_y, keys: [{ time: 0.0, value: 0.0 }, { time: 1.0, value: 1.0 }], loop: 'forever' }").unwrap().translate().unwrap();
     assert_eq!(kf.update(Duration::milliseconds(100)), Pon::Float(0.1));
     assert_eq!(kf.update(Duration::milliseconds(500)), Pon::Float(0.6));
 }
@@ -162,7 +161,7 @@ fn test_animation_from_pon() {
 #[test]
 fn test_animation_from_pon_vec3() {
     let mut kf: Animation = Pon::from_string(
-        "key_framed { property: this.pos_y, keys: [{ time: 0.0, value: vec3 { x: 0.0, y: 0.0, z: 1.0 } }, { time: 1.0, value: vec3 { x: 1.0, y: 1.0, z: 1.0 } }], loop: 'forever' }").unwrap().translate(&()).unwrap();
+        "key_framed { property: this.pos_y, keys: [{ time: 0.0, value: vec3 { x: 0.0, y: 0.0, z: 1.0 } }, { time: 1.0, value: vec3 { x: 1.0, y: 1.0, z: 1.0 } }], loop: 'forever' }").unwrap().translate().unwrap();
     assert_eq!(kf.update(Duration::milliseconds(100)), Pon::from_string("vec3 { x: 0.1, y: 0.1, z: 1.0 }").unwrap());
     assert_eq!(kf.update(Duration::milliseconds(500)), Pon::from_string("vec3 { x: 0.6, y: 0.6, z: 1.0 }").unwrap());
 }
@@ -170,7 +169,7 @@ fn test_animation_from_pon_vec3() {
 #[test]
 fn test_animation_from_pon_alternative_syntax() {
     let mut kf: Animation = Pon::from_string(
-        "key_framed { property: this.pos_y, keys: [[0.0, 0.0], { time: 1.0, value: 1.0 }], loop: 'forever' }").unwrap().translate(&()).unwrap();
+        "key_framed { property: this.pos_y, keys: [[0.0, 0.0], { time: 1.0, value: 1.0 }], loop: 'forever' }").unwrap().translate().unwrap();
     assert_eq!(kf.update(Duration::milliseconds(100)), Pon::Float(0.1));
     assert_eq!(kf.update(Duration::milliseconds(500)), Pon::Float(0.6));
 }
