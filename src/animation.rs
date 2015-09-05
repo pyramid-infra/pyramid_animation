@@ -2,7 +2,7 @@
 use time::*;
 
 use curve::*;
-use animateable::*;
+use animatable::*;
 use pyramid::pon::*;
 use cgmath::*;
 use std::fmt;
@@ -33,7 +33,7 @@ impl Animation {
     }
 }
 
-impl Animateable for Animation {
+impl Animatable for Animation {
     fn update(&self, time: Duration) -> Vec<(NamedPropRef, f32)> {
         let time = time - self.offset;
         let time = if time > self.duration {
@@ -96,31 +96,28 @@ impl<'a> Translatable<'a, Animation> for Pon {
                 let keys_array: &Vec<Pon> = try!(data.field_as("keys"));
                 let first_key = &keys_array[0];
                 let curve: Box<Curve<f32>> = {
-                    // let as_vec3: Result<Key<Vector3<f32>>, PonTranslateErr> = first_key.translate();
-                    // if let Ok(..) = as_vec3 {
-                    //     let keys: Vec<Key<Vector3<f32>>> = try!(data.field_as("keys"));
-                    //     Box::new(LinearKeyFrameCurve {
-                    //         keys: keys
-                    //     })
-                    // } else {
-                        let as_float: Result<Key<f32>, PonTranslateErr> = first_key.translate();
-                        if let Ok(..) = as_float {
-                            let keys: Vec<Key<f32>> = try!(data.field_as("keys"));
-                            Box::new(LinearKeyFrameCurve {
-                                keys: keys
-                            })
-                        } else {
-                            return Err(PonTranslateErr::Generic("Unrecognized keys".to_string()))
-                        }
-                    //}
+                    let as_float: Result<Key<f32>, PonTranslateErr> = first_key.translate();
+                    if let Ok(..) = as_float {
+                        let keys: Vec<Key<f32>> = try!(data.field_as("keys"));
+                        Box::new(LinearKeyFrameCurve {
+                            keys: keys
+                        })
+                    } else {
+                        return Err(PonTranslateErr::Generic("Unrecognized keys".to_string()))
+                    }
                 };
-                return Ok(Animation {
+                Ok(Animation {
                     curve: curve,
                     offset: Duration::zero(),
                     property: property.clone(),
                     loop_type: loop_type,
                     duration: Duration::milliseconds((duration*1000.0) as i64)
-                });
+                })
+            },
+            "fixed_value" => {
+                let property: &NamedPropRef = try!(try!(data.field("property")).as_reference());
+                let value = try!(data.field_as::<f32>("value"));
+                Ok(Animation::new_fixed_value(property.clone(), value))
             },
             s @ _ => Err(PonTranslateErr::UnrecognizedType(s.to_string()))
         }

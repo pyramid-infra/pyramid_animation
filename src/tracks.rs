@@ -1,21 +1,24 @@
 
-use std::collections::HashMap;
+#[cfg(test)]
 use std::cmp::Ordering;
-use time::*;
-use animateable::*;
+#[cfg(test)]
 use animation::*;
+
+use std::collections::HashMap;
+use time::*;
+use animatable::*;
 use pyramid::pon::*;
 
 pub struct Track {
     pub weight: f32,
-    pub animation: Box<Animateable>
+    pub animation: Box<Animatable>
 }
 
 pub struct Tracks {
     pub tracks: Vec<Track>
 }
 
-impl Animateable for Tracks {
+impl Animatable for Tracks {
     fn update(&self, time: Duration) -> Vec<(NamedPropRef, f32)> {
         let mut by_props = HashMap::new();
         for track in &self.tracks {

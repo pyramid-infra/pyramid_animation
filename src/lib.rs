@@ -6,7 +6,7 @@ extern crate cgmath;
 
 use std::collections::HashMap;
 
-mod animateable;
+mod animatable;
 mod animation;
 mod animation_set;
 mod tracks;
@@ -18,10 +18,10 @@ use pyramid::interface::*;
 use pyramid::pon::*;
 use pyramid::document::*;
 use animation::*;
-use animateable::*;
+use animatable::*;
 
 pub struct AnimationSubSystem {
-    animations: HashMap<EntityId, Box<Animateable>>,
+    animations: HashMap<EntityId, Box<Animatable>>,
     time: Duration
 }
 
@@ -40,7 +40,7 @@ impl ISubSystem for AnimationSubSystem {
     fn on_property_value_change(&mut self, system: &mut ISystem, prop_refs: &Vec<PropRef>) {
         for pr in prop_refs.iter().filter(|pr| pr.property_key == "animation") {
             let pn = system.get_property_value(&pr.entity_id, &pr.property_key.as_str()).unwrap();
-            let anim = pn.translate::<Box<Animateable>>().unwrap();
+            let anim = pn.translate::<Box<Animatable>>().unwrap();
             self.animations.insert(pr.entity_id, anim);
         }
     }
