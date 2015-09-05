@@ -6,22 +6,30 @@ extern crate cgmath;
 
 use std::collections::HashMap;
 
+mod animateable;
 mod animation;
+mod animation_set;
+mod tracks;
 mod curve;
+
+use time::*;
 
 use pyramid::interface::*;
 use pyramid::pon::*;
 use pyramid::document::*;
 use animation::*;
+use animateable::*;
 
 pub struct AnimationSubSystem {
-    animations: HashMap<EntityId, (Animation, PropRef)>
+    animations: HashMap<EntityId, Box<Animateable>>,
+    time: Duration
 }
 
 impl AnimationSubSystem {
     pub fn new() -> AnimationSubSystem {
         AnimationSubSystem {
-            animations: HashMap::new()
+            animations: HashMap::new(),
+            time: Duration::zero()
         }
     }
 }
@@ -32,15 +40,18 @@ impl ISubSystem for AnimationSubSystem {
     fn on_property_value_change(&mut self, system: &mut ISystem, prop_refs: &Vec<PropRef>) {
         for pr in prop_refs.iter().filter(|pr| pr.property_key == "animation") {
             let pn = system.get_property_value(&pr.entity_id, &pr.property_key.as_str()).unwrap();
-            let anim: Animation = pn.translate().unwrap();
-            let target = system.resolve_named_prop_ref(&pr.entity_id, &anim.property).unwrap();
-            self.animations.insert(pr.entity_id, (anim, target));
+            let anim = pn.translate::<Box<Animateable>>().unwrap();
+            self.animations.insert(pr.entity_id, anim);
         }
     }
     fn update(&mut self, system: &mut ISystem, delta_time: time::Duration) {
-        for (_, &mut (ref mut animation, ref mut target)) in self.animations.iter_mut() {
-            let value = { animation.update(delta_time) };
-            system.set_property(&target.entity_id.clone(), target.property_key.clone(), value);
+        self.time = self.time + delta_time;
+        for (entity_id, animation) in self.animations.iter() {
+            let to_update = { animation.update(self.time) };
+            for (named_prop_ref, value) in to_update {
+                let target = system.resolve_named_prop_ref(entity_id, &named_prop_ref).unwrap();
+                system.set_property(&target.entity_id.clone(), target.property_key.clone(), Pon::Float(value));
+            }
         }
     }
 }

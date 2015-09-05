@@ -1,13 +1,5 @@
 use cgmath::*;
 
-#[derive(PartialEq, Debug)]
-pub struct Key<T>(pub f32, pub T);
-
-#[derive(PartialEq, Debug)]
-pub struct LinearKeyFrameCurve<T> {
-    pub keys: Vec<Key<T>>
-}
-
 pub trait Curve<T> {
     fn value(&self, time: f32) -> T;
 }
@@ -30,6 +22,23 @@ impl Interpolateable for Vector2<f32> {
     fn interpolate(a: &Vector2<f32>, b: &Vector2<f32>, p: &f32) -> Vector2<f32> {
         a.mul_s(1.0 - p) + b.mul_s(*p)
     }
+}
+
+pub struct FixedValueCurve {
+    pub value: f32
+}
+impl Curve<f32> for FixedValueCurve {
+    fn value(&self, time: f32) -> f32 {
+        self.value
+    }
+}
+
+#[derive(PartialEq, Debug)]
+pub struct Key<T>(pub f32, pub T);
+
+#[derive(PartialEq, Debug)]
+pub struct LinearKeyFrameCurve<T> {
+    pub keys: Vec<Key<T>>
 }
 
 impl<T: Interpolateable> Curve<T> for LinearKeyFrameCurve<T> {
