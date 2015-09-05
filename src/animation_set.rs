@@ -18,3 +18,9 @@ impl Animateable for AnimationSet {
         res
     }
 }
+
+impl<'a> Translatable<'a, AnimationSet> for Pon {
+    fn inner_translate(&'a self) -> Result<AnimationSet, PonTranslateErr> {
+        unimplemented!()
+    }
+}

@@ -31,6 +31,13 @@ impl Animateable for Tracks {
     }
 }
 
+impl<'a> Translatable<'a, Tracks> for Pon {
+    fn inner_translate(&'a self) -> Result<Tracks, PonTranslateErr> {
+        unimplemented!()
+    }
+}
+
+
 #[test]
 fn test_tracks() {
     let setup = Tracks {
