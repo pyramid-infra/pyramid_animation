@@ -1,7 +1,5 @@
 #[cfg(test)]
 use std::cmp::Ordering;
-#[cfg(test)]
-use animation::*;
 
 use time::*;
 use animatable::*;

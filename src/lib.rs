@@ -17,7 +17,6 @@ use time::*;
 use pyramid::interface::*;
 use pyramid::pon::*;
 use pyramid::document::*;
-use animation::*;
 use animatable::*;
 
 pub struct AnimationSubSystem {
@@ -50,7 +49,7 @@ impl ISubSystem for AnimationSubSystem {
             let to_update = { animation.update(self.time) };
             for (named_prop_ref, value) in to_update {
                 let target = system.resolve_named_prop_ref(entity_id, &named_prop_ref).unwrap();
-                system.set_property(&target.entity_id.clone(), target.property_key.clone(), Pon::Float(value));
+                system.set_property(&target.entity_id.clone(), target.property_key.clone(), Pon::Float(value)).unwrap();
             }
         }
     }

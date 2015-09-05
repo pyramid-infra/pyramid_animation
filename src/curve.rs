@@ -28,7 +28,7 @@ pub struct FixedValueCurve {
     pub value: f32
 }
 impl Curve<f32> for FixedValueCurve {
-    fn value(&self, time: f32) -> f32 {
+    fn value(&self, _: f32) -> f32 {
         self.value
     }
 }

@@ -128,7 +128,7 @@ impl<'a> Translatable<'a, Animation> for Pon {
 
 #[test]
 fn test_animation() {
-    let mut kf = Animation {
+    let kf = Animation {
         curve: Box::new(LinearKeyFrameCurve {
             keys: vec![Key(0.0, 0.0), Key(1.0, 1.0)]
         }),
@@ -143,23 +143,15 @@ fn test_animation() {
 
 #[test]
 fn test_animation_from_pon() {
-    let mut kf: Animation = Pon::from_string(
+    let kf: Animation = Pon::from_string(
         "key_framed { property: this.x, keys: [{ time: 0.0, value: 0.0 }, { time: 1.0, value: 1.0 }], loop: 'forever' }").unwrap().translate().unwrap();
     assert_eq!(kf.update(Duration::milliseconds(100)), vec![(NamedPropRef::new("this", "x"), 0.1)]);
     assert_eq!(kf.update(Duration::milliseconds(600)), vec![(NamedPropRef::new("this", "x"), 0.6)]);
 }
 
-// #[test]
-// fn test_animation_from_pon_vec3() {
-//     let mut kf: Animation = Pon::from_string(
-//         "key_framed { property: this.pos_y, keys: [{ time: 0.0, value: vec3 { x: 0.0, y: 0.0, z: 1.0 } }, { time: 1.0, value: vec3 { x: 1.0, y: 1.0, z: 1.0 } }], loop: 'forever' }").unwrap().translate().unwrap();
-//     assert_eq!(kf.update(Duration::milliseconds(100)), Pon::Vector3(Vector3::new(0.1, 0.1, 1.0)));
-//     assert_eq!(kf.update(Duration::milliseconds(500)), Pon::Vector3(Vector3::new(0.6, 0.6, 1.0)));
-// }
-
 #[test]
 fn test_animation_from_pon_alternative_syntax() {
-    let mut kf: Animation = Pon::from_string(
+    let kf: Animation = Pon::from_string(
         "key_framed { property: this.x, keys: [[0.0, 0.0], { time: 1.0, value: 1.0 }], loop: 'forever' }").unwrap().translate().unwrap();
     assert_eq!(kf.update(Duration::milliseconds(100)), vec![(NamedPropRef::new("this", "x"), 0.1)]);
     assert_eq!(kf.update(Duration::milliseconds(600)), vec![(NamedPropRef::new("this", "x"), 0.6)]);
