@@ -133,26 +133,26 @@ fn test_animation() {
             keys: vec![Key(0.0, 0.0), Key(1.0, 1.0)]
         }),
         offset: Duration::zero(),
-        property: NamedPropRef::new("this", "x"),
+        property: NamedPropRef::new(EntityPath::This, "x"),
         loop_type: Loop::Once,
         duration: Duration::seconds(1)
     };
-    assert_eq!(kf.update(Duration::milliseconds(100)), vec![(NamedPropRef::new("this", "x"), 0.1)]);
-    assert_eq!(kf.update(Duration::milliseconds(600)), vec![(NamedPropRef::new("this", "x"), 0.6)]);
+    assert_eq!(kf.update(Duration::milliseconds(100)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.1)]);
+    assert_eq!(kf.update(Duration::milliseconds(600)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.6)]);
 }
 
 #[test]
 fn test_animation_from_pon() {
     let kf: Animation = Pon::from_string(
         "key_framed { property: this.x, keys: [{ time: 0.0, value: 0.0 }, { time: 1.0, value: 1.0 }], loop: 'forever' }").unwrap().translate().unwrap();
-    assert_eq!(kf.update(Duration::milliseconds(100)), vec![(NamedPropRef::new("this", "x"), 0.1)]);
-    assert_eq!(kf.update(Duration::milliseconds(600)), vec![(NamedPropRef::new("this", "x"), 0.6)]);
+    assert_eq!(kf.update(Duration::milliseconds(100)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.1)]);
+    assert_eq!(kf.update(Duration::milliseconds(600)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.6)]);
 }
 
 #[test]
 fn test_animation_from_pon_alternative_syntax() {
     let kf: Animation = Pon::from_string(
         "key_framed { property: this.x, keys: [[0.0, 0.0], { time: 1.0, value: 1.0 }], loop: 'forever' }").unwrap().translate().unwrap();
-    assert_eq!(kf.update(Duration::milliseconds(100)), vec![(NamedPropRef::new("this", "x"), 0.1)]);
-    assert_eq!(kf.update(Duration::milliseconds(600)), vec![(NamedPropRef::new("this", "x"), 0.6)]);
+    assert_eq!(kf.update(Duration::milliseconds(100)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.1)]);
+    assert_eq!(kf.update(Duration::milliseconds(600)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.6)]);
 }
