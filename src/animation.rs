@@ -5,7 +5,6 @@ use curve::*;
 use animatable::*;
 use pyramid::pon::*;
 use cgmath::*;
-use std::fmt;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Loop {
@@ -13,12 +12,22 @@ pub enum Loop {
     Once
 }
 
+#[derive(PartialEq, Debug, Clone)]
+pub enum CurveTime {
+    /// The curve is expected to have keys between 0 and 1
+    Relative,
+    /// The curve is expected to have keys between 0 and duration
+    Absolute
+}
+
+#[derive(Debug)]
 pub struct Animation {
     pub curve: Box<Curve<f32>>,
     pub offset: Duration,
     pub property: NamedPropRef,
     pub loop_type: Loop,
-    pub duration: Duration
+    pub duration: Duration,
+    pub curve_time: CurveTime
 }
 
 impl Animation {
@@ -28,7 +37,8 @@ impl Animation {
             offset: Duration::zero(),
             property: property,
             loop_type: Loop::Forever,
-            duration: Duration::weeks(1)
+            duration: Duration::weeks(1),
+            curve_time: CurveTime::Absolute
         }
     }
 }
@@ -45,15 +55,14 @@ impl Animatable for Animation {
         } else {
             time
         };
-        return vec![(self.property.clone(), self.curve.value(time.num_milliseconds() as f32/self.duration.num_milliseconds() as f32))];
+        let time = match self.curve_time {
+            CurveTime::Absolute => time.num_milliseconds() as f32 / 1000.0,
+            CurveTime::Relative => time.num_milliseconds() as f32 / self.duration.num_milliseconds() as f32
+        };
+        return vec![(self.property.clone(), self.curve.value(time))];
     }
 }
 
-impl fmt::Debug for Animation {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Animation")
-    }
-}
 
 impl<'a> Translatable<'a, Loop> for Pon {
     fn inner_translate(&'a self) -> Result<Loop, PonTranslateErr> {
@@ -64,9 +73,18 @@ impl<'a> Translatable<'a, Loop> for Pon {
         }
     }
 }
+impl<'a> Translatable<'a, CurveTime> for Pon {
+    fn inner_translate(&'a self) -> Result<CurveTime, PonTranslateErr> {
+        match try!(self.translate()) {
+            "absolute" => Ok(CurveTime::Absolute),
+            "relative" => Ok(CurveTime::Relative),
+            _ => Err(PonTranslateErr::InvalidValue { value: format!("{:?}", self) })
+        }
+    }
+}
 
-impl<'a, T> Translatable<'a, Key<T>> for Pon where Pon: Translatable<'a, T> {
-    fn inner_translate(&'a self) -> Result<Key<T>, PonTranslateErr> {
+impl<'a> Translatable<'a, Key<f32>> for Pon {
+    fn inner_translate(&'a self) -> Result<Key<f32>, PonTranslateErr> {
         match self {
             &Pon::Object(..) => {
                 let time: f32 = try!(self.field_as::<f32>("time"));
@@ -78,6 +96,7 @@ impl<'a, T> Translatable<'a, Key<T>> for Pon where Pon: Translatable<'a, T> {
                 let value = try!(arr[1].translate());
                 Ok(Key(time, value))
             },
+            &Pon::FloatArray(ref arr) => Ok(Key(arr[0], arr[1])),
             _ => {
                 Err(PonTranslateErr::MismatchType { expected: "Object or Array".to_string(), found: format!("{:?}", self) })
             }
@@ -93,6 +112,7 @@ impl<'a> Translatable<'a, Animation> for Pon {
                 let property: &NamedPropRef = try!(try!(data.field("property")).as_reference());
                 let duration: f32 = try!(data.field_as_or("duration", 1.0));
                 let loop_type = try!(data.field_as_or("loop", Loop::Once));
+                let curve_time = try!(data.field_as_or("curve_time", CurveTime::Absolute));
                 let keys_array: &Vec<Pon> = try!(data.field_as("keys"));
                 let first_key = &keys_array[0];
                 let curve: Box<Curve<f32>> = {
@@ -103,7 +123,7 @@ impl<'a> Translatable<'a, Animation> for Pon {
                             keys: keys
                         })
                     } else {
-                        return Err(PonTranslateErr::Generic("Unrecognized keys".to_string()))
+                        return Err(PonTranslateErr::Generic(format!("Unrecognized keys: {:?}", first_key)))
                     }
                 };
                 Ok(Animation {
@@ -111,7 +131,8 @@ impl<'a> Translatable<'a, Animation> for Pon {
                     offset: Duration::zero(),
                     property: property.clone(),
                     loop_type: loop_type,
-                    duration: Duration::milliseconds((duration*1000.0) as i64)
+                    duration: Duration::milliseconds((duration*1000.0) as i64),
+                    curve_time: curve_time
                 })
             },
             "fixed_value" => {

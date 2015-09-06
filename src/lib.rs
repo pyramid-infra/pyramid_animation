@@ -39,8 +39,10 @@ impl ISubSystem for AnimationSubSystem {
     fn on_property_value_change(&mut self, system: &mut ISystem, prop_refs: &Vec<PropRef>) {
         for pr in prop_refs.iter().filter(|pr| pr.property_key == "animation") {
             let pn = system.get_property_value(&pr.entity_id, &pr.property_key.as_str()).unwrap();
-            let anim = pn.translate::<Box<Animatable>>().unwrap();
-            self.animations.insert(pr.entity_id, anim);
+            match pn.translate::<Box<Animatable>>() {
+                Ok(anim) => { self.animations.insert(pr.entity_id, anim); },
+                Err(err) => { println!("Failed to translate animation: {:?}", err.to_string()); }
+            };
         }
     }
     fn update(&mut self, system: &mut ISystem, delta_time: time::Duration) {

@@ -1,6 +1,7 @@
 use cgmath::*;
+use std::fmt::Debug;
 
-pub trait Curve<T> {
+pub trait Curve<T> : Debug {
     fn value(&self, time: f32) -> T;
 }
 
@@ -24,6 +25,7 @@ impl Interpolateable for Vector2<f32> {
     }
 }
 
+#[derive(PartialEq, Debug)]
 pub struct FixedValueCurve {
     pub value: f32
 }
@@ -41,7 +43,7 @@ pub struct LinearKeyFrameCurve<T> {
     pub keys: Vec<Key<T>>
 }
 
-impl<T: Interpolateable> Curve<T> for LinearKeyFrameCurve<T> {
+impl<T: Interpolateable + Debug> Curve<T> for LinearKeyFrameCurve<T> {
     fn value(&self, time: f32) -> T {
         let mut key_before = None;
         let mut key_after = None;
@@ -94,4 +96,17 @@ fn test_key_frame_vector() {
     assert_eq!(kf.value(0.5), Vector2::new(0.5, 0.5));
     assert_eq!(kf.value(1.0), Vector2::new(1.0, 1.0));
     assert_eq!(kf.value(1.1), Vector2::new(1.0, 1.0));
+}
+
+#[test]
+fn test_key_frame_multi_keys() {
+    let kf = LinearKeyFrameCurve {
+        keys: vec![Key(0.0, 0.0), Key(10.0, 1.0), Key(20.0, 0.5), Key(21.0, 1.0), Key(22.0, 5.0)]
+    };
+    assert_eq!(kf.value(-0.1), 0.0);
+    assert_eq!(kf.value(0.0), 0.0);
+    assert_eq!(kf.value(0.5), 0.05);
+    assert_eq!(kf.value(20.5), 0.75);
+    assert_eq!(kf.value(21.5), 3.0);
+    assert_eq!(kf.value(30.0), 5.0);
 }
