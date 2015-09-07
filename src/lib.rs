@@ -5,6 +5,7 @@ extern crate time;
 extern crate cgmath;
 
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 
 mod animatable;
 mod animation;
@@ -19,8 +20,13 @@ use pyramid::pon::*;
 use pyramid::document::*;
 use animatable::*;
 
+struct EntityAnimation {
+    animation: Box<Animatable>,
+    cached_resolved_named_prop_refs: HashMap<NamedPropRef, PropRef>
+}
+
 pub struct AnimationSubSystem {
-    animations: HashMap<EntityId, Box<Animatable>>,
+    animations: HashMap<EntityId, EntityAnimation>,
     time: Duration
 }
 
@@ -42,7 +48,12 @@ impl ISubSystem for AnimationSubSystem {
                 &Pon::Nil => {}, // Ignore nil pons
                 pn @ _ => {
                     match pn.translate::<Box<Animatable>>() {
-                        Ok(anim) => { self.animations.insert(pr.entity_id, anim); },
+                        Ok(anim) => {
+                            self.animations.insert(pr.entity_id, EntityAnimation {
+                                animation: anim,
+                                cached_resolved_named_prop_refs: HashMap::new()
+                            });
+                        },
                         Err(err) => { println!("Failed to translate animation: {:?}", err.to_string()); }
                     };
                 }
@@ -51,10 +62,13 @@ impl ISubSystem for AnimationSubSystem {
     }
     fn update(&mut self, system: &mut ISystem, delta_time: time::Duration) {
         self.time = self.time + delta_time;
-        for (entity_id, animation) in self.animations.iter() {
-            let to_update = { animation.update(self.time) };
+        for (entity_id, entity_animation) in self.animations.iter_mut() {
+            let to_update = { entity_animation.animation.update(self.time) };
             for (named_prop_ref, value) in to_update {
-                let target = system.resolve_named_prop_ref(entity_id, &named_prop_ref).unwrap();
+                let target = match entity_animation.cached_resolved_named_prop_refs.entry(named_prop_ref.clone()) {
+                    Entry::Occupied(o) => o.into_mut(),
+                    Entry::Vacant(v) => v.insert(system.resolve_named_prop_ref(entity_id, &named_prop_ref).unwrap())
+                };
                 system.set_property(&target.entity_id.clone(), &target.property_key, Pon::Float(value)).unwrap();
             }
         }
