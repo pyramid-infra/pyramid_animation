@@ -156,7 +156,8 @@ fn test_animation() {
         offset: Duration::zero(),
         property: NamedPropRef::new(EntityPath::This, "x"),
         loop_type: Loop::Once,
-        duration: Duration::seconds(1)
+        duration: Duration::seconds(1),
+        curve_time: CurveTime::Absolute
     };
     assert_eq!(kf.update(Duration::milliseconds(100)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.1)]);
     assert_eq!(kf.update(Duration::milliseconds(600)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.6)]);
