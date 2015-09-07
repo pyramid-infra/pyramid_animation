@@ -38,8 +38,8 @@ impl ISubSystem for AnimationSubSystem {
 
     fn on_property_value_change(&mut self, system: &mut ISystem, prop_refs: &Vec<PropRef>) {
         for pr in prop_refs.iter().filter(|pr| pr.property_key == "animation") {
-            match system.get_property_value(&pr.entity_id, &pr.property_key.as_str()).unwrap() {
-                Pon::Nil => {}, // Ignore nil pons
+            match &*system.get_property_value(&pr.entity_id, &pr.property_key.as_str()).unwrap() {
+                &Pon::Nil => {}, // Ignore nil pons
                 pn @ _ => {
                     match pn.translate::<Box<Animatable>>() {
                         Ok(anim) => { self.animations.insert(pr.entity_id, anim); },
