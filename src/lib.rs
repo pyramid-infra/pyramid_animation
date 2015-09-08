@@ -8,9 +8,10 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
 mod animatable;
-mod animation;
-mod animation_set;
-mod tracks;
+mod track;
+mod curve_track;
+mod track_set;
+mod weighted_tracks;
 mod curve;
 
 use time::*;
@@ -18,10 +19,10 @@ use time::*;
 use pyramid::interface::*;
 use pyramid::pon::*;
 use pyramid::document::*;
-use animatable::*;
+use track::*;
 
 struct EntityAnimation {
-    animation: Box<Animatable>,
+    track: Box<Track>,
     cached_resolved_named_prop_refs: HashMap<NamedPropRef, PropRef>
 }
 
@@ -47,10 +48,10 @@ impl ISubSystem for AnimationSubSystem {
             match &*system.get_property_value(&pr.entity_id, &pr.property_key.as_str()).unwrap() {
                 &Pon::Nil => {}, // Ignore nil pons
                 pn @ _ => {
-                    match pn.translate::<Box<Animatable>>() {
+                    match pn.translate::<Box<Track>>() {
                         Ok(anim) => {
                             self.animations.insert(pr.entity_id, EntityAnimation {
-                                animation: anim,
+                                track: anim,
                                 cached_resolved_named_prop_refs: HashMap::new()
                             });
                         },
@@ -63,7 +64,7 @@ impl ISubSystem for AnimationSubSystem {
     fn update(&mut self, system: &mut ISystem, delta_time: time::Duration) {
         self.time = self.time + delta_time;
         for (entity_id, entity_animation) in self.animations.iter_mut() {
-            let to_update = { entity_animation.animation.update(self.time) };
+            let to_update = { entity_animation.track.value_at(self.time) };
             for (named_prop_ref, value) in to_update {
                 let target = match entity_animation.cached_resolved_named_prop_refs.entry(named_prop_ref.clone()) {
                     Entry::Occupied(o) => o.into_mut(),

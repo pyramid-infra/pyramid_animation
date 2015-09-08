@@ -1,24 +1,27 @@
 
-use time::*;
-use pyramid::pon::*;
-use animation::*;
-use animation_set::*;
-use tracks::*;
+use cgmath::*;
 
-pub trait Animatable {
-    fn update(&self, time: Duration) -> Vec<(NamedPropRef, f32)>;
+pub trait Interpolateable {
+    fn interpolate(a: &Self, b: &Self, p: &f32) -> Self;
 }
 
-
-impl<'a> Translatable<'a, Box<Animatable>> for Pon {
-    fn inner_translate(&'a self) -> Result<Box<Animatable>, PonTranslateErr> {
-        let &TypedPon { ref type_name, .. } = try!(self.translate());
-        match type_name.as_str() {
-            "key_framed" => Ok(Box::new(try!(self.translate::<Animation>()))),
-            "fixed_value" => Ok(Box::new(try!(self.translate::<Animation>()))),
-            "animation_set" => Ok(Box::new(try!(self.translate::<AnimationSet>()))),
-            "tracks" => Ok(Box::new(try!(self.translate::<Tracks>()))),
-            s @ _ => Err(PonTranslateErr::UnrecognizedType(s.to_string()))
-        }
+impl Interpolateable for f32 {
+    fn interpolate(a: &f32, b: &f32, p: &f32) -> f32 {
+        a * (1.0 - p) + b * p
+    }
+}
+impl Interpolateable for Vector2<f32> {
+    fn interpolate(a: &Vector2<f32>, b: &Vector2<f32>, p: &f32) -> Vector2<f32> {
+        a.mul_s(1.0 - p) + b.mul_s(*p)
+    }
+}
+impl Interpolateable for Vector3<f32> {
+    fn interpolate(a: &Vector3<f32>, b: &Vector3<f32>, p: &f32) -> Vector3<f32> {
+        a.mul_s(1.0 - p) + b.mul_s(*p)
+    }
+}
+impl Interpolateable for Vector4<f32> {
+    fn interpolate(a: &Vector4<f32>, b: &Vector4<f32>, p: &f32) -> Vector4<f32> {
+        a.mul_s(1.0 - p) + b.mul_s(*p)
     }
 }

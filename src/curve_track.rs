@@ -2,7 +2,7 @@
 use time::*;
 
 use curve::*;
-use animatable::*;
+use track::*;
 use pyramid::pon::*;
 use cgmath::*;
 
@@ -21,7 +21,7 @@ pub enum CurveTime {
 }
 
 #[derive(Debug)]
-pub struct Animation {
+pub struct CurveTrack {
     pub curve: Box<Curve<f32>>,
     pub offset: Duration,
     pub property: NamedPropRef,
@@ -30,9 +30,9 @@ pub struct Animation {
     pub curve_time: CurveTime
 }
 
-impl Animation {
-    pub fn new_fixed_value(property: NamedPropRef, value: f32) -> Animation {
-        Animation {
+impl CurveTrack {
+    pub fn new_fixed_value(property: NamedPropRef, value: f32) -> CurveTrack {
+        CurveTrack {
             curve: Box::new(FixedValueCurve { value: value }),
             offset: Duration::zero(),
             property: property,
@@ -43,8 +43,8 @@ impl Animation {
     }
 }
 
-impl Animatable for Animation {
-    fn update(&self, time: Duration) -> Vec<(NamedPropRef, f32)> {
+impl Track for CurveTrack {
+    fn value_at(&self, time: Duration) -> Vec<(NamedPropRef, f32)> {
         let time = time - self.offset;
         let time = if time > self.duration {
             if self.loop_type == Loop::Forever {
@@ -104,8 +104,8 @@ impl<'a> Translatable<'a, Key<f32>> for Pon {
     }
 }
 
-impl<'a> Translatable<'a, Animation> for Pon {
-    fn inner_translate(&'a self) -> Result<Animation, PonTranslateErr> {
+impl<'a> Translatable<'a, CurveTrack> for Pon {
+    fn inner_translate(&'a self) -> Result<CurveTrack, PonTranslateErr> {
         let &TypedPon { ref type_name, ref data } = try!(self.translate());
         match type_name.as_str() {
             "key_framed" => {
@@ -126,7 +126,7 @@ impl<'a> Translatable<'a, Animation> for Pon {
                         return Err(PonTranslateErr::Generic(format!("Unrecognized keys: {:?}", first_key)))
                     }
                 };
-                Ok(Animation {
+                Ok(CurveTrack {
                     curve: curve,
                     offset: Duration::zero(),
                     property: property.clone(),
@@ -138,7 +138,7 @@ impl<'a> Translatable<'a, Animation> for Pon {
             "fixed_value" => {
                 let property: &NamedPropRef = try!(try!(data.field("property")).as_reference());
                 let value = try!(data.field_as::<f32>("value"));
-                Ok(Animation::new_fixed_value(property.clone(), value))
+                Ok(CurveTrack::new_fixed_value(property.clone(), value))
             },
             s @ _ => Err(PonTranslateErr::UnrecognizedType(s.to_string()))
         }
@@ -149,7 +149,7 @@ impl<'a> Translatable<'a, Animation> for Pon {
 
 #[test]
 fn test_animation() {
-    let kf = Animation {
+    let kf = CurveTrack {
         curve: Box::new(LinearKeyFrameCurve {
             keys: vec![Key(0.0, 0.0), Key(1.0, 1.0)]
         }),
@@ -159,22 +159,22 @@ fn test_animation() {
         duration: Duration::seconds(1),
         curve_time: CurveTime::Absolute
     };
-    assert_eq!(kf.update(Duration::milliseconds(100)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.1)]);
-    assert_eq!(kf.update(Duration::milliseconds(600)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.6)]);
+    assert_eq!(kf.value_at(Duration::milliseconds(100)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.1)]);
+    assert_eq!(kf.value_at(Duration::milliseconds(600)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.6)]);
 }
 
 #[test]
 fn test_animation_from_pon() {
-    let kf: Animation = Pon::from_string(
+    let kf: CurveTrack = Pon::from_string(
         "key_framed { property: this.x, keys: [{ time: 0.0, value: 0.0 }, { time: 1.0, value: 1.0 }], loop: 'forever' }").unwrap().translate().unwrap();
-    assert_eq!(kf.update(Duration::milliseconds(100)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.1)]);
-    assert_eq!(kf.update(Duration::milliseconds(600)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.6)]);
+    assert_eq!(kf.value_at(Duration::milliseconds(100)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.1)]);
+    assert_eq!(kf.value_at(Duration::milliseconds(600)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.6)]);
 }
 
 #[test]
 fn test_animation_from_pon_alternative_syntax() {
-    let kf: Animation = Pon::from_string(
+    let kf: CurveTrack = Pon::from_string(
         "key_framed { property: this.x, keys: [[0.0, 0.0], { time: 1.0, value: 1.0 }], loop: 'forever' }").unwrap().translate().unwrap();
-    assert_eq!(kf.update(Duration::milliseconds(100)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.1)]);
-    assert_eq!(kf.update(Duration::milliseconds(600)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.6)]);
+    assert_eq!(kf.value_at(Duration::milliseconds(100)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.1)]);
+    assert_eq!(kf.value_at(Duration::milliseconds(600)), vec![(NamedPropRef::new(EntityPath::This, "x"), 0.6)]);
 }
