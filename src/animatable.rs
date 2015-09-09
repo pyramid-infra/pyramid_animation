@@ -2,6 +2,7 @@
 use cgmath::*;
 use pyramid::pon::*;
 use std::cmp;
+use std::borrow::Cow;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Animatable {
@@ -9,10 +10,13 @@ pub struct Animatable {
 }
 
 impl Animatable {
-    pub fn new_float(value: f32) -> Animatable {
+    pub fn new(value: Vec<f32>) -> Animatable {
         Animatable {
-            value: vec![value]
+            value: value
         }
+    }
+    pub fn new_float(value: f32) -> Animatable {
+        Animatable::new(vec![value])
     }
     pub fn add_weighted(&self, weight: f32, next_value: &Animatable) -> Animatable {
         let mut res = vec![];
@@ -33,7 +37,7 @@ impl ToPon for Animatable {
         match self.value.len() {
             1 => self.value[0].to_pon(),
             3 => Vector3::new(self.value[0], self.value[1], self.value[2]).to_pon(),
-            4 => Vector4::new(self.value[0], self.value[1], self.value[2], self.value[4]).to_pon(),
+            4 => Vector4::new(self.value[3], self.value[0], self.value[1], self.value[2]).to_pon(),
             _ => unreachable!()
         }
     }
@@ -72,6 +76,8 @@ impl<'a> Translatable<'a, Animatable> for Pon {
     fn inner_translate(&'a self) -> Result<Animatable, PonTranslateErr> {
         if let Ok(v) = self.translate::<f32>() {
             Ok(Animatable { value: vec![v] })
+        } else if let Ok(v) = self.translate::<Cow<Vec<f32>>>() {
+            Ok(Animatable { value: v.into_owned() })
         } else if let Ok(v) = self.translate::<Vector3<f32>>() {
             Ok(Animatable { value: vec![v.x, v.y, v.z] })
         } else if let Ok(v) = self.translate::<Vector4<f32>>() {

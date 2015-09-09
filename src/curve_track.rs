@@ -180,3 +180,10 @@ fn test_animation_from_pon_alternative_syntax() {
     assert_eq!(kf.value_at(Duration::milliseconds(100)), vec![(NamedPropRef::new(EntityPath::This, "x"), Animatable::new_float(0.1))]);
     assert_eq!(kf.value_at(Duration::milliseconds(600)), vec![(NamedPropRef::new(EntityPath::This, "x"), Animatable::new_float(0.6))]);
 }
+
+#[test]
+fn test_animation_from_pon_multivalue() {
+    let kf: CurveTrack = Pon::from_string(
+        "key_framed { property: this.x, keys: [[0.0, [0.0, 10.0]], [1.0, [-2.0, 0.0]]], loop: 'forever' }").unwrap().translate().unwrap();
+    assert_eq!(kf.value_at(Duration::milliseconds(500)), vec![(NamedPropRef::new(EntityPath::This, "x"), Animatable::new(vec![-1.0, 5.0]))]);
+}
