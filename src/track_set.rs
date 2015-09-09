@@ -4,13 +4,14 @@ use std::cmp::Ordering;
 use time::*;
 use track::*;
 use pyramid::pon::*;
+use animatable::*;
 
 pub struct TrackSet {
     pub tracks: Vec<Box<Track>>
 }
 
 impl Track for TrackSet {
-    fn value_at(&self, time: Duration) -> Vec<(NamedPropRef, f32)> {
+    fn value_at(&self, time: Duration) -> Vec<(NamedPropRef, Animatable)> {
         let mut res = vec![];
         for track in &self.tracks {
             for update in track.value_at(time).into_iter() {

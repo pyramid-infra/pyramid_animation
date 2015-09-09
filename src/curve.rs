@@ -1,3 +1,4 @@
+#[cfg(test)]
 use cgmath::*;
 use std::fmt::Debug;
 use animatable::*;

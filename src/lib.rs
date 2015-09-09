@@ -70,7 +70,7 @@ impl ISubSystem for AnimationSubSystem {
                     Entry::Occupied(o) => o.into_mut(),
                     Entry::Vacant(v) => v.insert(system.resolve_named_prop_ref(entity_id, &named_prop_ref).unwrap())
                 };
-                system.set_property(&target.entity_id.clone(), &target.property_key, Pon::Float(value)).unwrap();
+                system.set_property(&target.entity_id.clone(), &target.property_key, value.to_pon()).unwrap();
             }
         }
     }

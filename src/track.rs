@@ -4,9 +4,10 @@ use pyramid::pon::*;
 use curve_track::*;
 use track_set::*;
 use weighted_tracks::*;
+use animatable::*;
 
 pub trait Track {
-    fn value_at(&self, time: Duration) -> Vec<(NamedPropRef, f32)>;
+    fn value_at(&self, time: Duration) -> Vec<(NamedPropRef, Animatable)>;
 }
 
 
