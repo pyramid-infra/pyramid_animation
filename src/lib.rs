@@ -7,12 +7,12 @@ extern crate cgmath;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
-mod animatable;
-mod track;
-mod curve_track;
-mod track_set;
-mod weighted_tracks;
-mod curve;
+pub mod animatable;
+pub mod track;
+pub mod curve_track;
+pub mod track_set;
+pub mod weighted_tracks;
+pub mod curve;
 
 use time::*;
 
@@ -20,7 +20,12 @@ use pyramid::interface::*;
 use pyramid::pon::*;
 use pyramid::document::*;
 use pyramid::system::*;
-use track::*;
+
+pub use track::*;
+pub use track_set::*;
+pub use curve_track::*;
+pub use curve::*;
+pub use animatable::*;
 
 struct EntityAnimation {
     track: Box<Track>,
@@ -49,7 +54,7 @@ impl ISubSystem for AnimationSubSystem {
             match &system.document().get_property_value(&pr.entity_id, &pr.property_key.as_str()).unwrap() {
                 &Pon::Nil => {}, // Ignore nil pons
                 pn @ _ => {
-                    match pn.translate::<Box<Track>>() {
+                    match pn.translate::<Box<Track>>(&mut TranslateContext { document: Some(system.document_mut()) }) {
                         Ok(anim) => {
                             self.animations.insert(pr.entity_id, EntityAnimation {
                                 track: anim,

@@ -72,15 +72,15 @@ impl Interpolateable for Vector2<f32> {
     }
 }
 
-impl<'a> Translatable<'a, Animatable> for Pon {
-    fn inner_translate(&'a self) -> Result<Animatable, PonTranslateErr> {
-        if let Ok(v) = self.translate::<f32>() {
+impl<'a, 'b> Translatable<'a, 'b, Animatable> for Pon {
+    fn inner_translate(&'a self, context: &mut TranslateContext<'b>) -> Result<Animatable, PonTranslateErr> {
+        if let Ok(v) = self.translate::<f32>(context) {
             Ok(Animatable { value: vec![v] })
-        } else if let Ok(v) = self.translate::<Cow<Vec<f32>>>() {
+        } else if let Ok(v) = self.translate::<Cow<Vec<f32>>>(context) {
             Ok(Animatable { value: v.into_owned() })
-        } else if let Ok(v) = self.translate::<Vector3<f32>>() {
+        } else if let Ok(v) = self.translate::<Vector3<f32>>(context) {
             Ok(Animatable { value: vec![v.x, v.y, v.z] })
-        } else if let Ok(v) = self.translate::<Vector4<f32>>() {
+        } else if let Ok(v) = self.translate::<Vector4<f32>>(context) {
             Ok(Animatable { value: vec![v.x, v.y, v.z, v.w] })
         } else {
             Err(PonTranslateErr::InvalidValue { value: self.to_string() })

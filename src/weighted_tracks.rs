@@ -10,11 +10,13 @@ use track::*;
 use pyramid::pon::*;
 use animatable::*;
 
+#[derive(Debug)]
 pub struct WeightedTrack {
     pub weight: f32,
     pub track: Box<Track>
 }
 
+#[derive(Debug)]
 pub struct WeightedTracks {
     pub tracks: Vec<WeightedTrack>
 }
@@ -35,8 +37,8 @@ impl Track for WeightedTracks {
     }
 }
 
-impl<'a> Translatable<'a, WeightedTracks> for Pon {
-    fn inner_translate(&'a self) -> Result<WeightedTracks, PonTranslateErr> {
+impl<'a, 'b> Translatable<'a, 'b, WeightedTracks> for Pon {
+    fn inner_translate(&'a self, context: &mut TranslateContext<'b>) -> Result<WeightedTracks, PonTranslateErr> {
         unimplemented!()
     }
 }
