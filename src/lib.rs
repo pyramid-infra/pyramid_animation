@@ -19,6 +19,7 @@ use time::*;
 use pyramid::interface::*;
 use pyramid::pon::*;
 use pyramid::document::*;
+use pyramid::system::*;
 use track::*;
 
 struct EntityAnimation {
@@ -28,14 +29,14 @@ struct EntityAnimation {
 
 pub struct AnimationSubSystem {
     animations: HashMap<EntityId, EntityAnimation>,
-    time: Duration
+    start_time: Timespec
 }
 
 impl AnimationSubSystem {
     pub fn new() -> AnimationSubSystem {
         AnimationSubSystem {
             animations: HashMap::new(),
-            time: Duration::zero()
+            start_time: time::get_time()
         }
     }
 }
@@ -43,9 +44,9 @@ impl AnimationSubSystem {
 
 impl ISubSystem for AnimationSubSystem {
 
-    fn on_property_value_change(&mut self, system: &mut ISystem, prop_refs: &Vec<PropRef>) {
+    fn on_property_value_change(&mut self, system: &mut System, prop_refs: &Vec<PropRef>) {
         for pr in prop_refs.iter().filter(|pr| pr.property_key == "animation") {
-            match &system.get_property_value(&pr.entity_id, &pr.property_key.as_str()).unwrap() {
+            match &system.document().get_property_value(&pr.entity_id, &pr.property_key.as_str()).unwrap() {
                 &Pon::Nil => {}, // Ignore nil pons
                 pn @ _ => {
                     match pn.translate::<Box<Track>>() {
@@ -61,16 +62,16 @@ impl ISubSystem for AnimationSubSystem {
             }
         }
     }
-    fn update(&mut self, system: &mut ISystem, delta_time: time::Duration) {
-        self.time = self.time + delta_time;
+    fn update(&mut self, system: &mut System) {
+        let time = time::get_time() - self.start_time;
         for (entity_id, entity_animation) in self.animations.iter_mut() {
-            let to_update = { entity_animation.track.value_at(self.time) };
+            let to_update = { entity_animation.track.value_at(time) };
             for (named_prop_ref, value) in to_update {
                 let target = match entity_animation.cached_resolved_named_prop_refs.entry(named_prop_ref.clone()) {
                     Entry::Occupied(o) => o.into_mut(),
-                    Entry::Vacant(v) => v.insert(system.resolve_named_prop_ref(entity_id, &named_prop_ref).unwrap())
+                    Entry::Vacant(v) => v.insert(system.document().resolve_named_prop_ref(entity_id, &named_prop_ref).unwrap())
                 };
-                system.set_property(&target.entity_id.clone(), &target.property_key, value.to_pon()).unwrap();
+                system.document_mut().set_property(&target.entity_id.clone(), &target.property_key, value.to_pon()).unwrap();
             }
         }
     }
