@@ -19,14 +19,25 @@ impl<T: Debug + Clone> Curve<T> for FixedValueCurve<T> {
 }
 
 #[derive(PartialEq, Debug)]
-pub struct Key<T>(pub f32, pub T);
+pub struct Key<T: Clone>(pub f32, pub T);
 
 #[derive(PartialEq, Debug)]
-pub struct LinearKeyFrameCurve<T> {
+pub struct LinearKeyFrameCurve<T: Clone> {
     pub keys: Vec<Key<T>>
 }
 
-impl<T: Interpolateable + Debug> Curve<T> for LinearKeyFrameCurve<T> {
+impl<T: Interpolateable + Debug + Clone> LinearKeyFrameCurve<T> {
+    pub fn to_discreet(&self, n_keys: usize, duration: f32) -> DiscreetKeyFrameCurve<T> {
+        let mut keys = vec![];
+        for i in 0..n_keys {
+            let p = duration * (i as f32 / n_keys as f32);
+            keys.push(Key(p, self.value(p)));
+        }
+        DiscreetKeyFrameCurve { keys: keys }
+    }
+}
+
+impl<T: Interpolateable + Debug + Clone> Curve<T> for LinearKeyFrameCurve<T> {
     fn value(&self, time: f32) -> T {
         let mut key_before = None;
         let mut key_after = None;
@@ -54,6 +65,24 @@ impl<T: Interpolateable + Debug> Curve<T> for LinearKeyFrameCurve<T> {
         let d = key_after.0 - key_before.0;
         let p = (time - key_before.0) / d;
         return Interpolateable::interpolate(&key_before.1, &key_after.1, &p);
+    }
+}
+
+#[derive(PartialEq, Debug)]
+pub struct DiscreetKeyFrameCurve<T: Clone> {
+    pub keys: Vec<Key<T>>
+}
+
+impl<T: Interpolateable + Debug + Clone> Curve<T> for DiscreetKeyFrameCurve<T> {
+    fn value(&self, time: f32) -> T {
+        let i = (time * self.keys.len() as f32) as usize;
+        if i < 0 {
+            return self.keys[0].1.clone()
+        } else if (i >= self.keys.len()) {
+            return self.keys[self.keys.len() - 1].1.clone()
+        } else {
+            return self.keys[i as usize].1.clone();
+        }
     }
 }
 
