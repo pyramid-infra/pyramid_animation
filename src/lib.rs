@@ -50,21 +50,26 @@ impl AnimationSubSystem {
 impl ISubSystem for AnimationSubSystem {
 
     fn on_property_value_change(&mut self, system: &mut System, prop_refs: &Vec<PropRef>) {
+        let doc = system.document_mut();
         for pr in prop_refs.iter().filter(|pr| pr.property_key == "animation") {
-            match &system.document().get_property_value(&pr.entity_id, &pr.property_key.as_str()).unwrap() {
-                &Pon::Nil => {}, // Ignore nil pons
-                pn @ _ => {
-                    match pn.translate::<Box<Track>>(&mut TranslateContext { document: Some(system.document_mut()) }) {
-                        Ok(anim) => {
-                            self.animations.insert(pr.entity_id, EntityAnimation {
-                                track: anim,
-                                cached_resolved_named_prop_refs: HashMap::new()
-                            });
-                        },
-                        Err(err) => { println!("Failed to translate animation: {:?}", err.to_string()); }
-                    };
-                }
-            }
+            let pon = &*doc.get_property(&pr.entity_id, &pr.property_key.as_str()).unwrap();
+            pon.as_resolved(|pon| {
+                match pon {
+                    &Pon::Nil => {}, // Ignore nil pons
+                    pn @ _ => {
+                        match pn.translate::<Box<Track>>(&mut TranslateContext { document: Some(doc) }) {
+                            Ok(anim) => {
+                                self.animations.insert(pr.entity_id, EntityAnimation {
+                                    track: anim,
+                                    cached_resolved_named_prop_refs: HashMap::new()
+                                });
+                            },
+                            Err(err) => { println!("Failed to translate animation: {:?}", err.to_string()); }
+                        };
+                    }
+                };
+                Ok(())
+            }).unwrap()
         }
     }
     fn update(&mut self, system: &mut System) {

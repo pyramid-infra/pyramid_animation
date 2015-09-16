@@ -37,8 +37,8 @@ impl Track for WeightedTracks {
     }
 }
 
-impl<'a, 'b> Translatable<'a, 'b, WeightedTracks> for Pon {
-    fn inner_translate(&'a self, context: &mut TranslateContext<'b>) -> Result<WeightedTracks, PonTranslateErr> {
+impl Translatable<WeightedTracks> for Pon {
+    fn inner_translate(&self, context: &mut TranslateContext) -> Result<WeightedTracks, PonTranslateErr> {
         unimplemented!()
     }
 }

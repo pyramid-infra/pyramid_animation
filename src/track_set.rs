@@ -23,18 +23,19 @@ impl Track for TrackSet {
     }
 }
 
-impl<'a, 'b> Translatable<'a, 'b, TrackSet> for Pon {
-    fn inner_translate(&'a self, context: &mut TranslateContext<'b>) -> Result<TrackSet, PonTranslateErr> {
-        let &TypedPon { ref type_name, ref data } = try!(self.translate(context));
-        match type_name.as_str() {
-            "track_set" => {
-                let anims = try!(data.translate::<Vec<Box<Track>>>(context));
-                Ok(TrackSet {
-                    tracks: anims
-                })
-            },
-            s @ _ => Err(PonTranslateErr::UnrecognizedType(s.to_string()))
-        }
+impl Translatable<TrackSet> for Pon {
+    fn inner_translate(&self, context: &mut TranslateContext) -> Result<TrackSet, PonTranslateErr> {
+        self.as_typed(|&TypedPon { ref type_name, ref data }| {
+            match type_name.as_str() {
+                "track_set" => {
+                    let anims = try!(data.translate::<PonAutoVec<Box<Track>>>(context));
+                    Ok(TrackSet {
+                        tracks: anims.0
+                    })
+                },
+                s @ _ => Err(PonTranslateErr::UnrecognizedType(s.to_string()))
+            }
+        })
     }
 }
 
