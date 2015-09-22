@@ -66,18 +66,18 @@ impl Track for CurveTrack {
 }
 
 
-impl<'a, 'b> Translatable<'a, 'b, Loop> for Pon {
-    fn inner_translate(&'a self, context: &mut TranslateContext<'b>) -> Result<Loop, PonTranslateErr> {
-        match try!(self.translate(context)) {
+impl Translatable<Loop> for Pon {
+    fn inner_translate(&self, context: &mut TranslateContext) -> Result<Loop, PonTranslateErr> {
+        match try!(self.translate::<String>(context)).as_str() {
             "forever" => Ok(Loop::Forever),
             "once" => Ok(Loop::Once),
             _ => Err(PonTranslateErr::InvalidValue { value: format!("{:?}", self) })
         }
     }
 }
-impl<'a, 'b> Translatable<'a, 'b, CurveTime> for Pon {
-    fn inner_translate(&'a self, context: &mut TranslateContext<'b>) -> Result<CurveTime, PonTranslateErr> {
-        match try!(self.translate(context)) {
+impl Translatable<CurveTime> for Pon {
+    fn inner_translate(&self, context: &mut TranslateContext) -> Result<CurveTime, PonTranslateErr> {
+        match try!(self.translate::<String>(context)).as_str() {
             "absolute" => Ok(CurveTime::Absolute),
             "relative" => Ok(CurveTime::Relative),
             _ => Err(PonTranslateErr::InvalidValue { value: format!("{:?}", self) })
@@ -85,8 +85,8 @@ impl<'a, 'b> Translatable<'a, 'b, CurveTime> for Pon {
     }
 }
 
-impl<'a, 'b> Translatable<'a, 'b, Key<Animatable>> for Pon {
-    fn inner_translate(&'a self, context: &mut TranslateContext<'b>) -> Result<Key<Animatable>, PonTranslateErr> {
+impl Translatable<Key<Animatable>> for Pon {
+    fn inner_translate(&self, context: &mut TranslateContext) -> Result<Key<Animatable>, PonTranslateErr> {
         match self {
             &Pon::Object(..) => {
                 let time: f32 = try!(self.field_as::<f32>("time", context));
@@ -106,44 +106,38 @@ impl<'a, 'b> Translatable<'a, 'b, Key<Animatable>> for Pon {
     }
 }
 
-impl<'a, 'b> Translatable<'a, 'b, CurveTrack> for Pon {
-    fn inner_translate(&'a self, context: &mut TranslateContext<'b>) -> Result<CurveTrack, PonTranslateErr> {
-        let &TypedPon { ref type_name, ref data } = try!(self.translate(context));
-        match type_name.as_str() {
-            "key_framed" => {
-                let property: &NamedPropRef = try!(try!(data.field("property")).as_reference());
-                let duration: f32 = try!(data.field_as_or("duration", 1.0, context));
-                let loop_type = try!(data.field_as_or("loop", Loop::Once, context));
-                let curve_time = try!(data.field_as_or("curve_time", CurveTime::Absolute, context));
-                let keys_array: &Vec<Pon> = try!(data.field_as("keys", context));
-                let first_key = &keys_array[0];
-                let curve: Box<Curve<Animatable>> = {
-                    let as_float: Result<Key<Animatable>, PonTranslateErr> = first_key.translate(context);
-                    if let Ok(..) = as_float {
-                        let keys: Vec<Key<Animatable>> = try!(data.field_as("keys", context));
+impl Translatable<CurveTrack> for Pon {
+    fn inner_translate(&self, context: &mut TranslateContext) -> Result<CurveTrack, PonTranslateErr> {
+        self.as_typed(|&TypedPon { ref type_name, ref data }| {
+            match type_name.as_str() {
+                "key_framed" => {
+                    let property: &NamedPropRef = try!(try!(data.field("property")).as_reference());
+                    let duration: f32 = try!(data.field_as_or("duration", 1.0, context));
+                    let loop_type = try!(data.field_as_or("loop", Loop::Once, context));
+                    let curve_time = try!(data.field_as_or("curve_time", CurveTime::Absolute, context));
+                    let curve: Box<Curve<Animatable>> = {
+                        let keys: PonAutoVec<Key<Animatable>> = try!(data.field_as("keys", context));
                         Box::new(LinearKeyFrameCurve {
-                            keys: keys
+                            keys: keys.0
                         })
-                    } else {
-                        return Err(PonTranslateErr::Generic(format!("Unrecognized keys: {:?}", first_key)))
-                    }
-                };
-                Ok(CurveTrack {
-                    curve: curve,
-                    offset: Duration::zero(),
-                    property: property.clone(),
-                    loop_type: loop_type,
-                    duration: Duration::milliseconds((duration*1000.0) as i64),
-                    curve_time: curve_time
-                })
-            },
-            "fixed_value" => {
-                let property: &NamedPropRef = try!(try!(data.field("property")).as_reference());
-                let value = try!(data.field_as::<Animatable>("value", context));
-                Ok(CurveTrack::new_fixed_value(property.clone(), value))
-            },
-            s @ _ => Err(PonTranslateErr::UnrecognizedType(s.to_string()))
-        }
+                    };
+                    Ok(CurveTrack {
+                        curve: curve,
+                        offset: Duration::zero(),
+                        property: property.clone(),
+                        loop_type: loop_type,
+                        duration: Duration::milliseconds((duration*1000.0) as i64),
+                        curve_time: curve_time
+                    })
+                },
+                "fixed_value" => {
+                    let property: &NamedPropRef = try!(try!(data.field("property")).as_reference());
+                    let value = try!(data.field_as::<Animatable>("value", context));
+                    Ok(CurveTrack::new_fixed_value(property.clone(), value))
+                },
+                s @ _ => Err(PonTranslateErr::UnrecognizedType(s.to_string()))
+            }
+        })
     }
 }
 
